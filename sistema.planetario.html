@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema Solar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+    }
+    body {
+      background: #020612;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    #solar-system {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(ellipse at 50% 50%, #0a0e2a 0%, #020612 70%);
+      overflow: hidden;
+    }
+
+    .stars { position: absolute; inset: 0; }
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle var(--d) ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      from { opacity: 0.2; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.4); }
+    }
+
+    .sun-container {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    .sun {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff7aa, #FFD700 40%, #FF8C00 75%, #FF4500 100%);
+      box-shadow: 0 0 30px 10px rgba(255,200,0,.6), 0 0 70px 25px rgba(255,150,0,.4), 0 0 120px 50px rgba(255,80,0,.2);
+      animation: pulse-sun 3s ease-in-out infinite alternate;
+      cursor: pointer;
+    }
+    @keyframes pulse-sun {
+      from { box-shadow: 0 0 30px 10px rgba(255,200,0,.6), 0 0 70px 25px rgba(255,150,0,.4), 0 0 120px 50px rgba(255,80,0,.2); }
+      to   { box-shadow: 0 0 50px 18px rgba(255,220,0,.8), 0 0 90px 35px rgba(255,170,0,.5), 0 0 150px 65px rgba(255,100,0,.25); }
+    }
+
+    .orbit {
+      position: absolute;
+      top: 50%; left: 50%;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .planet-wrapper {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform-origin: 0 0;
+      animation: orbit-spin var(--period) linear infinite;
+    }
+    @keyframes orbit-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .planet {
+      position: absolute;
+      border-radius: 50%;
+      transform: translateX(-50%) translateY(-50%);
+      cursor: pointer;
+      transition: filter .2s;
+      z-index: 5;
+    }
+    .planet:hover { filter: brightness(1.5) drop-shadow(0 0 8px white); }
+    .planet::after {
+      content: attr(data-name);
+      position: absolute;
+      bottom: -20px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: rgba(255,255,255,.55);
+      white-space: nowrap;
+      letter-spacing: .5px;
+    }
+
+    .saturn-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 4px solid rgba(210,180,140,.45);
+      transform: translate(-50%, -50%) scaleY(0.28);
+      pointer-events: none;
+    }
+
+    /* ── Panel lateral ── */
+    #info-panel {
+      position: absolute;
+      top: 0; right: -360px;
+      width: 340px; height: 100%;
+      background: linear-gradient(160deg, rgba(8,14,45,.97) 0%, rgba(3,6,20,.97) 100%);
+      border-left: 1px solid rgba(100,150,255,.2);
+      padding: 28px 22px;
+      transition: right .35s cubic-bezier(.4,0,.2,1);
+      z-index: 50;
+      overflow-y: auto;
+    }
+    #info-panel.open { right: 0; }
+    #info-panel::-webkit-scrollbar { width: 4px; }
+    #info-panel::-webkit-scrollbar-thumb { background: rgba(100,150,255,.3); border-radius: 4px; }
+
+    #panel-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15);
+      color: white;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    #panel-close:hover { background: rgba(255,80,80,.3); }
+
+    #panel-planet-icon {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: block;
+      box-shadow: 0 0 20px 6px rgba(150,180,255,.3);
+    }
+
+    #panel-name {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: #7eb8ff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    #panel-subtitle {
+      text-align: center;
+      font-size: 10px;
+      color: rgba(255,255,255,.35);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(100,150,255,.3), transparent);
+      margin: 16px 0;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: rgba(255,255,255,.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .stat-value {
+      font-size: 12px;
+      color: #e0eaff;
+      text-align: right;
+    }
+
+    .section-title {
+      font-size: 10px;
+      color: #7eb8ff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    #panel-description {
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      line-height: 1.75;
+    }
+    .curiosidad {
+      background: rgba(100,150,255,.07);
+      border-left: 2px solid #7eb8ff;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,.6);
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      padding: 7px 18px;
+      z-index: 20;
+    }
+    #controls label { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: 1.5px; text-transform: uppercase; }
+    #speed-slider { width: 90px; accent-color: #7eb8ff; cursor: pointer; }
+    #speed-val { font-size: 11px; color: #7eb8ff; min-width: 28px; text-align: center; }
+
+    #title-label {
+      position: absolute;
+      top: 16px; left: 20px;
+      font-size: 11px; letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.28);
+    }
+    #click-hint {
+      position: absolute;
+      bottom: 55px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: rgba(255,255,255,.22);
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div id="solar-system">
+  <div class="stars" id="stars"></div>
+  <div id="title-label">Sistema Solar</div>
+  <div id="orbits-container"></div>
+  <div id="planets-container"></div>
+  <div class="sun-container"><div class="sun" id="sun-btn"></div></div>
+  <div id="click-hint">Haz clic en cualquier planeta para ver su información</div>
+
+  <div id="info-panel">
+    <button id="panel-close">✕</button>
+    <canvas id="panel-planet-icon" width="70" height="70"></canvas>
+    <div id="panel-name"></div>
+    <div id="panel-subtitle"></div>
+    <div class="divider"></div>
+    <div id="panel-stats"></div>
+    <div class="divider"></div>
+    <div class="section-title">Descripción</div>
+    <div id="panel-description"></div>
+  </div>
+
+  <div id="controls">
+    <label>Velocidad</label>
+    <input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" />
+    <span id="speed-val">1.0x</span>
+  </div>
+</div>
+
+<script>
+const planets = [
+  {
+    name: 'Mercurio', subtitulo: 'El más cercano al Sol',
+    radius: 8, orbit: 75, period: 4,
+    gradient: ['#d0d0d0','#808080'],
+    stats: [
+      { label: 'Posición',     value: '1° desde el Sol' },
+      { label: 'Tipo',         value: 'Planeta rocoso' },
+      { label: 'Atmósfera',    value: 'Casi inexistente' },
+      { label: 'Temperatura',  value: '-180°C a +430°C' },
+      { label: 'Curiosidades', value: '2-3 años terrestres/día' },
+    ],
+    descripcion: 'El planeta más cercano al Sol. Su superficie está llena de cráteres. Sin atmósfera protectora, las temperaturas son extremadamente variables.',
+    curiosidad: 'Rota tan lento sobre su eje que un día en Mercurio equivale a 2-3 años terrestres. Su órbita, sin embargo, es la más rápida del sistema solar.',
+  },
+  {
+    name: 'Venus', subtitulo: 'El hermano de la Tierra',
+    radius: 12, orbit: 108, period: 9,
+    gradient: ['#f5e0b0','#c8a060'],
+    stats: [
+      { label: 'Posición',    value: '2° desde el Sol' },
+      { label: 'Tipo',        value: 'Planeta rocoso' },
+      { label: 'Atmósfera',   value: 'CO₂ densa y tóxica' },
+      { label: 'Temperatura', value: '~465°C (la más alta)' },
+      { label: 'Tamaño',      value: 'Similar a la Tierra' },
+    ],
+    descripcion: 'Segunda planeta desde el Sol. Su densa atmósfera de CO₂ provoca un efecto invernadero extremo, siendo el planeta más caliente del sistema solar.',
+    curiosidad: 'Tiene rotación retrógrada: el Sol sale por el oeste. Es tan parecido a la Tierra en tamaño y masa que se le llama "hermano terrestre".',
+  },
+  {
+    name: 'Tierra', subtitulo: 'Nuestro hogar',
+    radius: 13, orbit: 146, period: 14,
+    gradient: ['#6ec6ff','#2a7a30'],
+    stats: [
+      { label: 'Posición', value: '3° desde el Sol' },
+      { label: 'Masa',     value: '5.972 × 10²⁴ kg' },
+      { label: 'Radio',    value: '6,378 km' },
+      { label: 'Gravedad', value: '9.80665 m/s²' },
+      { label: 'Volumen',  value: '5.57 × 10⁸ km³' },
+    ],
+    descripcion: 'Único planeta conocido con vida. Posee agua líquida, atmósfera rica en oxígeno y una distancia perfecta del Sol. Se encuentra entre Marte y Venus.',
+    curiosidad: 'Según el conocimiento actual de la humanidad, es el único lugar en el universo donde se ha encontrado vida. El único sistema solar que mejor conocemos.',
+  },
+  {
+    name: 'Marte', subtitulo: 'El planeta rojo',
+    radius: 10, orbit: 183, period: 22,
+    gradient: ['#e05020','#8b2500'],
+    stats: [
+      { label: 'Posición',   value: '4° desde el Sol' },
+      { label: 'Tipo',       value: 'Planeta rocoso' },
+      { label: 'Atmósfera',  value: 'CO₂ fina' },
+      { label: 'Superficie', value: 'Óxido de hierro (rojo)' },
+      { label: 'Agua',       value: 'Indicios en el pasado' },
+    ],
+    descripcion: 'El planeta rojo. Su color se debe al óxido de hierro en su superficie. Tiene la montaña más alta del sistema solar: el Olympus Mons. Explorado por misiones robóticas.',
+    curiosidad: 'Evidencias sugieren que pudo haber sido habitable en el pasado. Actualmente se buscan signos de vida microbiana bajo su superficie.',
+  },
+  {
+    name: 'Júpiter', subtitulo: 'El gigante gaseoso',
+    radius: 28, orbit: 240, period: 65,
+    gradient: ['#e8b060','#8b5010'],
+    bands: true,
+    stats: [
+      { label: 'Posición',         value: '5° desde el Sol' },
+      { label: 'Tipo',             value: 'Gigante gaseoso' },
+      { label: 'Lunas',            value: '95 lunas conocidas' },
+      { label: 'Gran Mancha Roja', value: 'Tormenta duradera' },
+      { label: 'Campo magnético',  value: 'Muy poderoso' },
+    ],
+    descripcion: 'El planeta más grande del sistema solar. Su poderoso campo magnético domina las órbitas cercanas. La Gran Mancha Roja es una tormenta que dura siglos.',
+    curiosidad: 'Es tan masivo que se le considera el objeto dominante del sistema solar, solo superado por el Sol. Sus lunas incluyen mundos con posibles océanos subterráneos.',
+  },
+  {
+    name: 'Saturno', subtitulo: 'El de los anillos',
+    radius: 22, orbit: 305, period: 130,
+    gradient: ['#ecd080','#a08030'],
+    rings: true,
+    stats: [
+      { label: 'Posición',         value: '6° desde el Sol' },
+      { label: 'Tipo',             value: 'Gigante gaseoso' },
+      { label: 'Anillos',          value: 'Hielo y roca' },
+      { label: 'Lunas',            value: 'Numerosas lunas' },
+      { label: 'Campo magnético',  value: 'Moderado' },
+    ],
+    descripcion: 'Famoso por sus espectaculares anillos formados por hielo y roca. Es el planeta menos denso del sistema solar: podría flotar en agua.',
+    curiosidad: 'Sus anillos son visibles desde la Tierra con telescopios y cambian con el tiempo. Titán, su luna más grande, tiene atmósfera propia con lluvia de metano.',
+  },
+  {
+    name: 'Urano', subtitulo: 'El gigante de hielo inclinado',
+    radius: 16, orbit: 360, period: 230,
+    gradient: ['#a0f0f0','#50b0b0'],
+    stats: [
+      { label: 'Posición',      value: '7° desde el Sol' },
+      { label: 'Tipo',          value: 'Gigante de hielo' },
+      { label: 'Inclinación',   value: '~98° (rota de lado)' },
+      { label: 'Composición',   value: 'Metano, helio, hidrógeno' },
+      { label: 'Color',         value: 'Azul-verde por metano' },
+    ],
+    descripcion: 'Séptimo planeta desde el Sol. Rota prácticamente de lado con un eje de inclinación de 98°. Su atmósfera de metano le da su característico color azul-verde.',
+    curiosidad: 'Gira de lado, sus anillos son débiles y sus lunas tienen nombres de personajes de Shakespeare. Tiene un día muy largo y es el más frío del sistema solar.',
+  },
+  {
+    name: 'Neptuno', subtitulo: 'El más lejano',
+    radius: 15, orbit: 410, period: 380,
+    gradient: ['#6080ff','#2030a0'],
+    stats: [
+      { label: 'Posición',    value: '8° desde el Sol' },
+      { label: 'Tipo',        value: 'Gigante de hielo' },
+      { label: 'Vientos',     value: '+2,100 km/h (récord)' },
+      { label: 'Composición', value: 'Similar a Urano' },
+      { label: 'Atmósfera',   value: 'Hidrógeno, helio, metano' },
+    ],
+    descripcion: 'El planeta más lejano del Sol. Tiene los vientos más veloces de todo el sistema solar. Conocido por su intenso color azul y tormentas activas.',
+    curiosidad: 'Fue el primer planeta descubierto por predicción matemática antes de ser observado. Su luna Tritón orbita en dirección contraria a la rotación del planeta.',
+  },
+];
+
+/* Estrellas */
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 220; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() < 0.12 ? 2 : 1;
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${1.5+Math.random()*3.5}s;opacity:${0.2+Math.random()*0.8}`;
+  starsEl.appendChild(s);
+}
+
+const orbitsC  = document.getElementById('orbits-container');
+const planetsC = document.getElementById('planets-container');
+const panel    = document.getElementById('info-panel');
+const wrappers = [];
+
+// Escalar órbitas dinámicamente para que quepan siempre en pantalla
+const MAX_ORBIT_BASE = 410;
+function getScale() {
+  return Math.min(window.innerWidth, window.innerHeight) / 2 * 0.91 / MAX_ORBIT_BASE;
+}
+
+function buildSystem() {
+  orbitsC.innerHTML = '';
+  planetsC.innerHTML = '';
+  wrappers.length = 0;
+  const sc = getScale();
+
+  planets.forEach(p => {
+    const orbit  = Math.round(p.orbit  * sc);
+    const radius = Math.max(4, Math.round(p.radius * sc));
+
+    const orb = document.createElement('div');
+    orb.className = 'orbit';
+    orb.style.cssText = `width:${orbit*2}px;height:${orbit*2}px;`;
+    orbitsC.appendChild(orb);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'planet-wrapper';
+    wrapper.style.cssText = `--period:${p.period}s;`;
+    wrapper.dataset.period = p.period;
+
+    if (p.rings) {
+      const ringsz = Math.round(30 * sc);
+      const ring = document.createElement('div');
+      ring.className = 'saturn-ring';
+      ring.style.cssText = `width:${radius*2+ringsz}px;height:${radius*2+ringsz}px;left:${orbit}px;top:0;`;
+      wrapper.appendChild(ring);
+    }
+
+    const planet = document.createElement('div');
+    planet.className = 'planet';
+    planet.dataset.name = p.name;
+    const sz = radius * 2;
+    planet.style.cssText = `width:${sz}px;height:${sz}px;left:${orbit}px;top:0;`;
+    if (p.bands) {
+      planet.style.background = `radial-gradient(circle at 35% 30%,rgba(255,220,140,.55) 0%,transparent 55%),repeating-linear-gradient(180deg,#e8b060 0px,#c07030 5px,#e8b060 10px,#805020 15px,#e8b060 20px)`;
+    } else {
+      planet.style.background = `radial-gradient(circle at 35% 30%,${p.gradient[0]},${p.gradient[1]})`;
+    }
+    planet.addEventListener('click', e => { e.stopPropagation(); openPanel(p); });
+    wrapper.appendChild(planet);
+    planetsC.appendChild(wrapper);
+    wrappers.push({ el: wrapper, basePeriod: p.period });
+  });
+
+  const sp = parseFloat(document.getElementById('speed-slider').value);
+  wrappers.forEach(w => { w.el.style.animationDuration = (w.basePeriod/sp)+'s'; });
+}
+
+window.addEventListener('resize', buildSystem);
+
+function drawPlanetCanvas(p) {
+  const c = document.getElementById('panel-planet-icon');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,70,70);
+  if (p.bands) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(35,35,33,0,Math.PI*2); ctx.clip();
+    for (let y=2; y<68; y+=8) {
+      ctx.fillStyle = y%16===0 ? '#c07030' : '#e8b060';
+      ctx.fillRect(2,y,66,8);
+    }
+    const glo = ctx.createRadialGradient(22,20,1,35,35,34);
+    glo.addColorStop(0,'rgba(255,220,140,.45)'); glo.addColorStop(1,'transparent');
+    ctx.fillStyle=glo; ctx.fillRect(2,2,66,66);
+    ctx.restore();
+  } else {
+    const g = ctx.createRadialGradient(24,22,2,35,35,35);
+    g.addColorStop(0, p.gradient[0]); g.addColorStop(1, p.gradient[1]);
+    ctx.beginPath(); ctx.arc(35,35,33,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+  }
+  if (p.rings) {
+    ctx.save(); ctx.strokeStyle='rgba(210,180,140,.55)'; ctx.lineWidth=4;
+    ctx.scale(1,0.28); ctx.beginPath(); ctx.arc(35,35/0.28,42,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function openPanel(p) {
+  drawPlanetCanvas(p);
+  document.getElementById('panel-name').textContent = p.name.toUpperCase();
+  document.getElementById('panel-subtitle').textContent = p.subtitulo;
+  document.getElementById('panel-stats').innerHTML = p.stats.map(s =>
+    `<div class="stat-row"><span class="stat-label">${s.label}</span><span class="stat-value">${s.value}</span></div>`
+  ).join('');
+  document.getElementById('panel-description').innerHTML =
+    `<p style="margin-bottom:10px">${p.descripcion}</p><div class="curiosidad">💡 ${p.curiosidad}</div>`;
+  panel.scrollTop = 0;
+  panel.classList.add('open');
+}
+
+buildSystem();
+
+/* Sol */
+document.getElementById('sun-btn').addEventListener('click', () => {
+  const c = document.getElementById('panel-planet-icon');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,70,70);
+  const g = ctx.createRadialGradient(25,22,3,35,35,35);
+  g.addColorStop(0,'#fff7aa'); g.addColorStop(.4,'#FFD700'); g.addColorStop(.75,'#FF8C00'); g.addColorStop(1,'#FF4500');
+  ctx.beginPath(); ctx.arc(35,35,33,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+  document.getElementById('panel-name').textContent = 'SOL';
+  document.getElementById('panel-subtitle').textContent = 'Estrella del sistema solar';
+  document.getElementById('panel-stats').innerHTML = [
+    { label:'Edad',        value:'4,005 millones de años' },
+    { label:'Radio',       value:'695,510 km' },
+    { label:'Masa',        value:'1.989 × 10³⁰ kg' },
+    { label:'Temperatura', value:'5,778 K (superficie)' },
+    { label:'Tipo',        value:'Estrella enana amarilla' },
+  ].map(s=>`<div class="stat-row"><span class="stat-label">${s.label}</span><span class="stat-value">${s.value}</span></div>`).join('');
+  document.getElementById('panel-description').innerHTML =
+    `<p style="margin-bottom:10px">Se trata del centro del sistema solar. Todos los planetas que lo integran, así como los cometas y asteroides conocidos, orbitan a su alrededor atraídos por su gigantesca gravedad.</p>
+    <div class="curiosidad">💡 El Sol representa el 99.86% de toda la masa del sistema solar.</div>`;
+  panel.scrollTop = 0;
+  panel.classList.add('open');
+});
+
+document.getElementById('panel-close').addEventListener('click', () => panel.classList.remove('open'));
+
+/* Velocidad */
+const slider = document.getElementById('speed-slider');
+const speedVal = document.getElementById('speed-val');
+slider.addEventListener('input', () => {
+  const sp = parseFloat(slider.value);
+  speedVal.textContent = sp.toFixed(1) + 'x';
+  wrappers.forEach(w => { w.el.style.animationDuration = (w.basePeriod/sp)+'s'; });
+});
+</script>
+</body>
+</html>
